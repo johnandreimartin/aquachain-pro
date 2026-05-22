@@ -109,9 +109,28 @@ async function connectMetaMaskNode() {
         // Remount active user components panels UI records logic data mapping checks
         evaluateParticipantProfileUIContext();
 
+        // DYNAMIC ROLE BADGE CREATION LOGIC
+        let roleBadgeHTML = "";
+        if (activeUserProfile && activeUserProfile.role > 0) {
+            const roleName = ROLE_MAP[activeUserProfile.role];
+            // Render an emerald layout status chip badge if identity exists
+            roleBadgeHTML = `<span class="ml-2 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold font-sans tracking-wide uppercase">${roleName}</span>`;
+        } else {
+            // Render a low-contrast indicator tag context if user is a standard guest
+            roleBadgeHTML = `<span class="ml-2 px-1.5 py-0.5 bg-slate-700/50 border border-slate-600 text-slate-400 rounded text-[10px] font-bold font-sans tracking-wide uppercase">Unregistered</span>`;
+        }
+
         const btnContainer = document.getElementById("btnConnect");
-        btnContainer.className = "bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-1.5 flex items-center gap-2 text-white text-xs font-mono cursor-default";
-        btnText.innerHTML = `<div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1"></div> ${activeUserAccount.substring(0,6)}...${activeUserAccount.substring(38)}`;
+        btnContainer.className = "bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-1.5 flex items-center text-white text-xs font-mono cursor-default shadow-xs";
+        
+        // Output clean aligned layout components using embedded layout structures
+        btnText.innerHTML = `
+            <div class="flex items-center">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-2 shrink-0"></div>
+                <span>${activeUserAccount.substring(0,6)}...${activeUserAccount.substring(38)}</span>
+                ${roleBadgeHTML}
+            </div>
+        `;
 
     } catch (err) {
         console.error(err);
