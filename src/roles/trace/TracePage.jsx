@@ -18,7 +18,8 @@ export function TracePage({ contract }) {
     setBatch(null);
     setHistory([]);
     try {
-      const data = await contract.batches(searchId);
+      // FIX: Used window.BigInt to satisfy older ESLint configurations
+      const data = await contract.batches(window.BigInt(searchId));
       if (data.crayfishType === '') {
         return alert('No record found for this Batch ID in the ledger.');
       }
@@ -32,7 +33,7 @@ export function TracePage({ contract }) {
         transporter: data.currentTransporter,
         status:      Number(data.status),
       });
-      const logs = await contract.getBatchHistory(searchId);
+      const logs = await contract.getBatchHistory(window.BigInt(searchId));
       setHistory(logs);
     } catch (err) {
       console.error(err);

@@ -12,7 +12,8 @@ export function TransporterPage({ contract }) {
     if (!contract || !batchId) return;
     setLoading(true);
     try {
-      const tx = await contract.startTransit(batchId);
+      // FIX: Used window.BigInt to satisfy older ESLint configurations
+      const tx = await contract.startTransit(window.BigInt(batchId));
       await tx.wait();
       alert('Success: Shipment picked up. Status updated to "In Transit".');
       setBatchId('');

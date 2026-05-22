@@ -11,7 +11,8 @@ export function VendorPage({ contract }) {
     if (!contract || !batchId) return alert('Enter a valid Batch ID first.');
     setLoading(true);
     try {
-      const tx = await contract.confirmDelivery(batchId, accepted);
+      // FIX: Used window.BigInt to satisfy older ESLint configurations
+      const tx = await contract.confirmDelivery(window.BigInt(batchId), accepted);
       await tx.wait();
       alert(`Batch #${batchId} finalized as: ${accepted ? '"Delivered" ✓' : '"Rejected" ✗'}`);
       setBatchId('');

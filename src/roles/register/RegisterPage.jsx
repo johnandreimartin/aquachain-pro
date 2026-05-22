@@ -77,10 +77,11 @@ export function RegisterPage({ contract, myProfile }) {
           </FormField>
 
           <FormField label="Ecosystem Role Assignment">
+            {/* FIX: Handled with base-10 parsing to match strict enum mapping definitions without float leakage */}
             <select
               className={inputCls + ' font-semibold text-slate-700'}
               value={role}
-              onChange={(e) => setRole(Number(e.target.value))}
+              onChange={(e) => setRole(parseInt(e.target.value, 10))}
             >
               <option value={1}>Crayfish Farmer</option>
               <option value={2}>Distributor</option>

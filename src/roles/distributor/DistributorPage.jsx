@@ -4,7 +4,6 @@ import { FormField, inputCls } from '../../components/shared/FormField';
 import { TxButton } from '../../components/shared/TxButton';
 
 // ─── Sub-form: Transfer Ownership to Vendor ──────────────────────────────────
-// Per the workflow, Distributor can also initiate transferOwnership → Vendor
 function TransferToVendorForm({ contract }) {
   const [batchId, setBatchId]   = useState('');
   const [receiver, setReceiver] = useState('');
@@ -15,7 +14,8 @@ function TransferToVendorForm({ contract }) {
     if (!contract) return;
     setLoading(true);
     try {
-      const tx = await contract.transferOwnership(batchId, receiver);
+      // FIX: Used window.BigInt + renamed to transferBatchOwnership to avoid Ownable signature conflict
+      const tx = await contract.transferBatchOwnership(window.BigInt(batchId), receiver);
       await tx.wait();
       alert('Success: Batch ownership transferred to Vendor/Restaurant node.');
       setBatchId(''); setReceiver('');
@@ -52,7 +52,7 @@ function TransferToVendorForm({ contract }) {
       </div>
       <div className="sm:col-span-3">
         <TxButton loading={loading} type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white">
-          transferOwnership() → Vendor/Restaurant
+          transferBatchOwnership() → Vendor/Restaurant
         </TxButton>
       </div>
     </form>
@@ -76,7 +76,7 @@ export function DistributorPage({ contract }) {
         <div>
           <h3 className="font-bold text-violet-900 text-sm">Distributor Role in the Workflow</h3>
           <p className="text-sm text-violet-700 mt-1 leading-relaxed">
-            Once the Farmer calls <code className="bg-violet-100 px-1 rounded font-mono text-xs">transferOwnership()</code> 
+            Once the Farmer calls <code className="bg-violet-100 px-1 rounded font-mono text-xs">transferBatchOwnership()</code> 
             {' '}to your wallet address, you become the current owner of the batch on-chain. 
             Your action is to forward that ownership to the Vendor/Restaurant to complete the distribution leg.
           </p>

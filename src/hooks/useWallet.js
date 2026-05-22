@@ -39,21 +39,28 @@ export function useWallet() {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const net      = await provider.getNetwork();
-      const netInfo  = getNetworkInfo(net.chainId);
+      let netInfo    = getNetworkInfo(net.chainId);
       setNetwork(netInfo);
 
-      // Auto-intercept if wrong network
+      // Auto-intercept network check restructured to prevent early return deadlocks
       if (!netInfo.isSepolia) {
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: '0xaa36a7' }],
           });
+          // Refresh network parameters if switch resolves smoothly before chainChanged reload
+          const updatedNet = await provider.getNetwork();
+          netInfo = getNetworkInfo(updatedNet.chainId);
+          setNetwork(netInfo);
         } catch (switchErr) {
           console.warn("Network switch canceled or failed", switchErr);
+          return; // Only return early if the switch explicitly failed/was rejected
         }
-        return;
       }
+
+      // Final sanity fallback check before proceeding to signers
+      if (!netInfo.isSepolia) return;
 
       const signer      = await provider.getSigner();
       const aquaContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);

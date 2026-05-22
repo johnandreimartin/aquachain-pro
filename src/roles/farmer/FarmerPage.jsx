@@ -16,10 +16,53 @@ function RegisterBatchForm({ contract }) {
     if (!contract) return alert('Connect MetaMask first!');
     setLoading(true);
     try {
-      const tx = await contract.registerBatch(crayfishType, harvestDate, pondOrigin, quantity);
-      await tx.wait();
-      const counter = await contract.batchCounter();
-      alert(`Success: Batch ID #${counter.toString()} created with status "Created"!`);
+      // 1. Dispatch transaction
+      const tx = await contract.registerBatch(crayfishType, harvestDate, pondOrigin, window.BigInt(quantity));
+      
+      // 2. Await block confirmation
+      const receipt = await tx.wait();
+      
+      // Print the raw logs to the browser console for debugging
+      console.log("=== AQUACHAIN DEBUG: RAW RECEIPT LOGS ===", receipt.logs);
+      
+      let displayId = "New";
+
+      // 3. Robust parsing check across all common names and positional indexes
+      if (receipt && receipt.logs) {
+        receipt.logs.forEach((log, index) => {
+          try {
+            const parsedLog = contract.interface.parseLog(log);
+            console.log(`Parsed Log #${index} successfully:`, parsedLog);
+            
+            if (parsedLog && parsedLog.args) {
+              // Look through common variable names emitted by supply chain contracts
+              const extractedId = 
+                parsedLog.args.batchId ?? 
+                parsedLog.args.id ?? 
+                parsedLog.args.idCounter ?? 
+                parsedLog.args[0]; // Fallback to the very first parameter of the event
+              
+              if (extractedId !== undefined && extractedId !== null) {
+                displayId = `#${extractedId.toString()}`;
+              }
+            }
+          } catch (logErr) {
+            console.warn(`Log #${index} could not be parsed with current ABI:`, logErr.message);
+          }
+        });
+      }
+
+      // 4. Ultimate fallback to contract read if log-parsing failed
+      if (displayId === "New") {
+        try {
+          const counter = await contract.batchCounter();
+          displayId = `#${counter.toString()}`;
+        } catch (counterErr) {
+          console.error("Fallback batchCounter call also failed:", counterErr.message);
+        }
+      }
+
+      alert(`Success: Batch ID ${displayId} created with status "Created"!`);
       setCrayfishType(''); setHarvestDate(''); setPondOrigin(''); setQuantity('');
     } catch (err) {
       alert('Transaction failed: ' + (err.reason || err.message));
@@ -97,7 +140,7 @@ function TransferOwnershipForm({ contract }) {
     if (!contract) return;
     setLoading(true);
     try {
-      const tx = await contract.transferOwnership(batchId, receiver);
+      const tx = await contract.transferBatchOwnership(window.BigInt(batchId), receiver);
       await tx.wait();
       alert('Success: Digital custody transferred to next ledger node.');
       setBatchId(''); setReceiver('');
@@ -136,7 +179,7 @@ function TransferOwnershipForm({ contract }) {
 
       <div className="sm:col-span-3">
         <TxButton loading={loading} type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white">
-          Trigger transferOwnership() → Distributor
+          Trigger transferBatchOwnership() → Distributor
         </TxButton>
       </div>
     </form>
