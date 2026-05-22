@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaChain Supply Chain Ledger</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col antialiased font-sans">
+
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md shadow-blue-500/20">
+                    <i data-lucide="shield" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <span class="text-lg font-bold tracking-tight block">AquaChain</span>
+                    <span class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase block -mt-1">
+                        Aquaculture Supply Chain Ledger
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div id="networkBadge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border bg-amber-400/10 border-amber-400/30 text-amber-400">
+                    <div id="networkDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                    <span id="lblNetworkName">Detecting Network...</span>
+                </div>
+
+                <div id="headerProfileBlock" class="text-right hidden sm:hidden">
+                    <span id="lblHeaderProfileName" class="text-xs font-semibold block text-slate-200">Loading...</span>
+                    <span id="lblHeaderProfileRole" class="text-[10px] font-bold block text-blue-400 uppercase tracking-wider">Guest Node</span>
+                </div>
+
+                <button id="btnConnect" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-2">
+                    <span id="btnConnectText">Connect Wallet</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="wrongNetworkBanner" class="hidden bg-amber-400/10 border-b border-amber-400/20 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-500 text-xs font-semibold">
+            <div class="flex items-center gap-2.5">
+                <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
+                <span>Wrong network detected. Transactions require the <strong>Sepolia Testnet</strong>.</span>
+            </div>
+            <button id="btnSwitchNetwork" class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-lg font-bold transition shadow-md cursor-pointer">
+                Switch to Sepolia
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <aside class="lg:col-span-3 flex flex-col gap-1.5">
+            <div class="mb-2">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">System</p>
+                <button data-target-tab="home" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-all mb-0.5 bg-blue-600 text-white shadow-md shadow-blue-600/20 active-tab">
+                    <span class="flex items-center gap-3"><i data-lucide="home" class="w-4 h-4"></i>Demo Home</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-60 arrow-indicator"></i>
+                </button>
+                <button data-target-tab="register" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-all mb-0.5 text-slate-600 hover:bg-slate-200/60">
+                    <span class="flex items-center gap-3"><i data-lucide="user-check" class="w-4 h-4"></i>Node Enrollment</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-60 hidden arrow-indicator"></i>
+                </button>
+            </div>
+            <div class="my-2 border-t border-slate-200/60"></div>
+
+            <div class="mb-2">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">Supply Chain Workflow</p>
+                <button data-target-tab="farmer" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-all mb-0.5 text-slate-600 hover:bg-slate-200/60">
+                    <span class="flex items-center gap-3"><i data-lucide="fish" class="w-4 h-4"></i>1. Crayfish Farmer</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-60 hidden arrow-indicator"></i>
+                </button>
+                <button data-target-tab="distributor" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-all mb-0.5 text-slate-600 hover:bg-slate-200/60">
+                    <span class="flex items-center gap-3"><i data-lucide="users" class="w-4 h-4"></i>2. Distributor</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-60 hidden arrow-indicator"></i>
+                </button>
+                <button data-target-tab="transporter" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-all mb-0.5 text-slate-600 hover:bg-slate-200/60">
+                    <span class="flex items-center gap-3"><i data-lucide="truck" class="w-4 h-4"></i>3. Transporter</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-60 hidden arrow-indicator"></i>
+                </button>
+                <button data-target-tab="vendor" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-all mb-0.5 text-slate-600 hover:bg-slate-200/60">
+                    <span class="flex items-center gap-3"><i data-lucide="shopping-bag" class="w-4 h-4"></i>4. Vendor / Restaurant</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-60 hidden arrow-indicator"></i>
+                </button>
+            </div>
+            <div class="my-2 border-t border-slate-200/60"></div>
+
+            <div class="mb-2">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">Public Audit</p>
+                <button data-target-tab="trace" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-all mb-0.5 text-slate-600 hover:bg-slate-200/60">
+                    <span class="flex items-center gap-3"><i data-lucide="search" class="w-4 h-4"></i>Traceability Engine</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-60 hidden arrow-indicator"></i>
+                </button>
+            </div>
+        </aside>
+
+        <main class="lg:col-span-9 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm relative min-h-[500px]">
+            
+            <div id="panel-home" class="tab-view space-y-10"></div>
+
+            <div id="panel-register" class="tab-view hidden max-w-xl"></div>
+
+            <div id="panel-farmer" class="tab-view hidden space-y-10"></div>
+
+            <div id="panel-distributor" class="tab-view hidden space-y-8"></div>
+
+            <div id="panel-transporter" class="tab-view hidden max-w-xl space-y-8"></div>
+
+            <div id="panel-vendor" class="tab-view hidden max-w-xl space-y-8"></div>
+
+            <div id="panel-trace" class="tab-view hidden space-y-8"></div>
+
+        </main>
+    </div>
+
+    <footer class="bg-white border-t border-slate-200/60 mt-auto py-4 text-center text-xs font-medium text-slate-400">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>© 2026 AquaChain Supply Chain Registries.</p>
+            <p class="font-mono text-[11px] bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-slate-500">
+                FRE403 · Blockchain Project Demo Build
+            </p>
+        </div>
+    </footer>
+
+    <script src="js/contract.js"></script>
+    <script src="js/panels/home.js"></script>
+    <script src="js/panels/register.js"></script>
+    <script src="js/panels/farmer.js"></script>
+    <script src="js/panels/distributor.js"></script>
+    <script src="js/panels/transporter.js"></script>
+    <script src="js/panels/vendor.js"></script>
+    <script src="js/panels/trace.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
