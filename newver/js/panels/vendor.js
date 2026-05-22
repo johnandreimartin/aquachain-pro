@@ -1,8 +1,6 @@
 /**
  * js/panels/vendor.js
  * Comprehensive Vendor & Restaurant Dashboard Panel
- * Features: Intake Confirmation, Detailed Custody Audit with Role Resolution,
- * and Live Scan of Historically Received/Owned Batches.
  */
 
 function renderVendorView() {
@@ -22,7 +20,7 @@ function renderVendorView() {
                 <div>
                     <h3 class="font-bold text-emerald-900 text-sm">Vendor Role in the Workflow</h3>
                     <p class="text-sm text-emerald-700 mt-1 leading-relaxed">
-                        You are the final destination node in the ecosystem. Enter an arriving Batch ID to inspect its detailed chain of custody and roles before signing off. Accepting sets the status to <strong>"Delivered"</strong>; rejecting sets it to <strong>"Rejected"</strong>.
+                        Once the Transporter marks the items as <strong>"Delivered"</strong>, inspect the cargo lot below. Confirming receipt signs off on the delivery, updating the status and finalizing ownership transfer to your wallet.
                     </p>
                 </div>
             </div>
@@ -48,7 +46,7 @@ function renderVendorView() {
 
                     <div class="flex flex-col sm:flex-row gap-3 pt-2">
                         <button id="btnVendorAccept" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
-                            <i data-lucide="check-circle-2" class="w-4 h-4"></i> Accept Delivery (Delivered)
+                            <i data-lucide="check-circle-2" class="w-4 h-4"></i> Confirm Receipt (Claim Ownership)
                         </button>
                         <button id="btnVendorReject" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
                             <i data-lucide="x-circle" class="w-4 h-4"></i> Reject Shipment (Rejected)
@@ -72,7 +70,7 @@ function renderVendorView() {
 
                 <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-3xs">
                     <table class="w-full text-sm text-left text-slate-600 border-collapse">
-                        <thead class="text-xs uppercase tracking-wider text-slate-400 bg-slate-50/80 border-b border-slate-200">
+                        <thead class="text-xs uppercase tracking-wider text-slate-400 bg-slate-50/70 border-b border-slate-200">
                             <tr>
                                 <th class="p-4 font-bold">Batch ID</th>
                                 <th class="p-4 font-bold">Variety / Species</th>
@@ -95,20 +93,14 @@ function renderVendorView() {
         </div>
     `;
 
-    // Render Lucide icons on DOM element insertion
     lucide.createIcons();
 
-    // Map user interactive action listeners
     document.getElementById("btnVendorInspect").addEventListener('click', loadVendorTargetBatchAuditLogs);
     document.getElementById("btnRefreshVendorInventory").addEventListener('click', loadAllVendorOwnedReceivedItems);
     document.getElementById("btnVendorAccept").addEventListener('click', () => submitVendorStatusUpdateTx(2));
     document.getElementById("btnVendorReject").addEventListener('click', () => submitVendorStatusUpdateTx(3));
 }
 
-/**
- * On-Chain Utility Helper: Queries participants registry index variables
- * to append exact Role context names alongside active cryptographic public keys.
- */
 async function resolveAccountIdentityRoleText(address) {
     try {
         if (!address || address === "0x0000000000000000000000000000000000000000") {
@@ -124,25 +116,14 @@ async function resolveAccountIdentityRoleText(address) {
     }
 }
 
-/**
- * Core Feature 1: Highly detailed Chain Audit Log displaying
- * the specific resolved participant roles for each wallet in the history array.
- */
 async function loadVendorTargetBatchAuditLogs() {
     if (!contract) return alert("MetaMask provider identity anchor missing.");
-    
     const targetBatchId = document.getElementById("vendorBatchId").value;
     const auditWrapper = document.getElementById("vendorAuditDisplayWrapper");
-    
     if (!targetBatchId) return alert("Please specify an active Batch ID to audit first.");
     
     auditWrapper.classList.remove('hidden');
-    auditWrapper.innerHTML = `
-        <div class="flex items-center justify-center p-6 text-sm text-slate-500 font-medium">
-            <div class="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full loading-spinner mr-2"></div>
-            Compiling Cryptographic Signatures & Role Logs...
-        </div>
-    `;
+    auditWrapper.innerHTML = `<div class="flex items-center justify-center p-6 text-sm text-slate-500 font-medium"><div class="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full loading-spinner mr-2"></div>Compiling Cryptographic Signatures & Role Logs...</div>`;
 
     try {
         const batchMetadata = await contract.batches(targetBatchId);
@@ -151,11 +132,9 @@ async function loadVendorTargetBatchAuditLogs() {
             return alert(`Error: Reference Batch #${targetBatchId} does not exist on-chain.`);
         }
 
-        // Fetch array of interaction addresses from the blockchain history mapping
         const historicalAddressesArray = await contract.getBatchHistory(targetBatchId);
         let dynamicHistoryTimelineHTML = '';
 
-        // Iterate through each address to resolve its identity configuration and roles on-chain
         for (let i = 0; i < historicalAddressesArray.length; i++) {
             const currentWallet = historicalAddressesArray[i];
             const identityDetailsString = await resolveAccountIdentityRoleText(currentWallet);
@@ -182,13 +161,11 @@ async function loadVendorTargetBatchAuditLogs() {
                     </div>
                     <span class="text-[10px] bg-slate-200 px-2 py-1 text-slate-700 rounded-md font-mono font-bold">Ledger Verified</span>
                 </div>
-
                 <div class="space-y-3 relative before:absolute before:inset-y-1 before:left-2.5 before:w-0.5 before:bg-slate-200">
                     ${dynamicHistoryTimelineHTML || '<p class="text-xs italic text-slate-400 pl-6">No historical custody transfers found.</p>'}
                 </div>
             </div>
         `;
-
     } catch (err) {
         console.error(err);
         auditWrapper.innerHTML = `<p class="text-xs font-bold text-rose-600 p-2">Failed to load detailed role audit logs.</p>`;
@@ -197,31 +174,12 @@ async function loadVendorTargetBatchAuditLogs() {
     }
 }
 
-/**
- * Core Feature 2: Loops through ledger batch storage indices
- * to filter and list items that match the user's active wallet address.
- */
 async function loadAllVendorOwnedReceivedItems() {
-    if (!contract || !activeUserAccount) {
-        return alert("Please link your authorized MetaMask wallet profile credentials first.");
-    }
-
+    if (!contract || !activeUserAccount) return alert("Please link your authorized MetaMask wallet profile credentials first.");
     const tbody = document.getElementById("tblVendorInventoryBody");
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="6" class="p-8 text-center text-slate-500 font-medium">
-                <div class="flex items-center justify-center gap-2">
-                    <div class="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full loading-spinner"></div>
-                    Scanning Ledger Index Blocks for Your Wallet Transactions...
-                </div>
-            </td>
-        </tr>
-    `;
+    tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium"><div class="flex items-center justify-center gap-2"><div class="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full loading-spinner"></div>Scanning Ledger Index Blocks for Your Wallet Transactions...</div></td></tr>`;
 
-    let compiledRowsHTML = '';
-    let batchIndexCounter = 1;
-    let itemsFoundCounter = 0;
-
+    let compiledRowsHTML = ''; let batchIndexCounter = 1; let itemsFoundCounter = 0;
     const statusBadgeStyles = [
         '<span class="bg-blue-50 border border-blue-200 text-blue-700 font-bold px-2 py-0.5 rounded text-2xs uppercase tracking-wide">Created</span>',
         '<span class="bg-amber-50 border border-amber-200 text-amber-700 font-bold px-2 py-0.5 rounded text-2xs uppercase tracking-wide">In Transit</span>',
@@ -230,14 +188,10 @@ async function loadAllVendorOwnedReceivedItems() {
     ];
 
     try {
-        // Scans the first 50 index slots to extract historic data records context
         while (batchIndexCounter <= 50) {
             const data = await contract.batches(batchIndexCounter);
-            
-            // Reaching ID 0 confirms the end of the registered sequential logs chain array
             if (data.id.toString() === "0") break;
 
-            // Verification Check: Filter for records where the Vendor is the active currentOwner
             if (data.currentOwner.toLowerCase() === activeUserAccount.toLowerCase()) {
                 itemsFoundCounter++;
                 compiledRowsHTML += `
@@ -248,50 +202,27 @@ async function loadAllVendorOwnedReceivedItems() {
                         <td class="p-4 text-xs font-medium text-slate-500">${data.harvestDate}</td>
                         <td class="p-4">${statusBadgeStyles[data.shipmentStatus]}</td>
                         <td class="p-4 text-center">
-                            <button type="button" onclick="loadBatchToVendorActionField(${data.id.toString()})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-2xs transition shadow-2xs cursor-pointer">
-                                Select Lot
-                            </button>
+                            <button type="button" onclick="loadBatchToVendorActionField(${data.id.toString()})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-2xs transition shadow-2xs cursor-pointer">Select Lot</button>
                         </td>
                     </tr>
                 `;
             }
             batchIndexCounter++;
         }
-
-        if (itemsFoundCounter === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="p-8 text-center text-slate-400 font-medium italic">
-                        No previous transactions or received batch assets found matching your active wallet address.
-                    </td>
-                </tr>
-            `;
-        } else {
-            tbody.innerHTML = compiledRowsHTML;
-        }
-
+        tbody.innerHTML = itemsFoundCounter === 0 ? `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-medium italic">No previous transactions or received batch assets found matching your active wallet address.</td></tr>` : compiledRowsHTML;
     } catch (err) {
         console.error(err);
         tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-rose-600 font-bold text-xs">Failed to fetch transactions matrix: ${err.message}</td></tr>`;
     }
 }
 
-/**
- * Table Action Handler Shortcut: Copies the chosen batch index parameters 
- * directly into the working fields to execute or inspect them immediately.
- */
 window.loadBatchToVendorActionField = function(batchId) {
     document.getElementById("vendorBatchId").value = batchId;
     loadVendorTargetBatchAuditLogs();
 };
 
-/**
- * Dispatcher: Signals the contract method `updateShipmentStatus` with inputs 
- * matching configuration value indices matrices parameters (2 for Accept, 3 for Reject).
- */
 async function submitVendorStatusUpdateTx(statusCode) {
     if (!contract) return alert("Web3 secure signing gateway disconnected.");
-    
     const id = document.getElementById("vendorBatchId").value;
     if (!id) return alert("Please specify a valid numeric Batch ID to process.");
 
@@ -300,17 +231,13 @@ async function submitVendorStatusUpdateTx(statusCode) {
 
     try {
         btnAccept.disabled = true; btnReject.disabled = true;
-        
         const tx = await contract.updateShipmentStatus(id, statusCode);
         await tx.wait();
         
-        alert(`Success: Batch #${id} status parameter updated on the blockchain ledger.`);
-        
-        // Refresh items dashboard displays automatically
+        alert(`Success: Receipt confirmed for Batch #${id}. Logistical status set on-chain.`);
         document.getElementById("vendorBatchId").value = "";
         document.getElementById("vendorAuditDisplayWrapper").classList.add('hidden');
         loadAllVendorOwnedReceivedItems();
-        
     } catch (err) {
         alert("Transaction failed: " + (err.reason || err.message));
     } finally {
